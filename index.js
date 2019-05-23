@@ -57,10 +57,11 @@ async function sendNotification(count) {
 async function sendCard(card) {
   const manaCost = emojify(card.mana_cost)
   const oracle = emojify(card.oracle_text)
-  const loyalty = card.loyalty ? `Loyalty: ${card.loyalty}`:''
+  const loyalty = card.loyalty ? `Loyalty: ${card.loyalty} `:''
   const type = card.type_line
   const name = card.name
-  const pt = type.includes('Creature') && card.power && card.toughness ? `${card.power}/${card.toughness}` : ''
+  const pt = type.includes('Creature') && card.power && card.toughness ? `${card.power}/${card.toughness} ` : ''
+  const rarity = card.rarity.charAt(0).toUpperCase() + card.rarity.slice(1) //Javascript wtfbbq?!
 
   const options = {
     method: 'POST',
@@ -75,7 +76,7 @@ async function sendCard(card) {
           "type": "section",
           "text": {
             "type": "mrkdwn",
-            "text": `*${name}* ${manaCost}\n\n${type} ${pt||loyalty}\n\n${oracle}\n\nIllustrated by: ${card.artist}`
+            "text": `*${name}* ${manaCost}\n\n${type} ${pt||loyalty}· ${rarity}\n\n${oracle}\n\nIllustrated by: ${card.artist}`
           },
           "accessory": {
             "type": "image",
