@@ -24,6 +24,7 @@ const mapColorEmoji = color => {
     case 'R': return 'red'
     case 'G': return 'green'
     case 'S': return 'snow'
+    case 'C': return 'colorless'
     case 'B/G': return 'bg'
     case 'B/R': return 'br'
     case 'G/U': return 'gu'
@@ -33,12 +34,13 @@ const mapColorEmoji = color => {
     case 'U/R': return 'ur'
     case 'W/B': return 'wb'
     case 'W/U': return 'wu'
+    case 'T': return 'tap'
     default: return color
   }
 }
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const emojify = text => text.replace(/{([\dXWURBGS/]+)}/g, (match, p1) => `:mtg-${mapColorEmoji(p1)}:`.toLocaleLowerCase())
+const emojify = text => text.replace(/{([\dXWURBGSTC/]+)}/g, (match, p1) => `:mtg-${mapColorEmoji(p1)}:`.toLocaleLowerCase())
 
 async function sendNotification(count) {
   const options = {
