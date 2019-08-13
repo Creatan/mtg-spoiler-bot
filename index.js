@@ -11,7 +11,7 @@ const s3 = new AWS.S3({
 
 const params = {
   Bucket: process.env.S3_BUCKET, 
-  Key: "spoilers.json", 
+  Key: `spoilers-${process.env.MTG_SET}.json`, 
 }
 const scryfallUrl = `https://api.scryfall.com/cards/search?order=set&q=e%3A${process.env.MTG_SET}&unique=prints`
 const spoilerPageUrl = `https://scryfall.com/sets/${process.env.MTG_SET}?order=spoiled`
@@ -110,41 +110,60 @@ async function sendCard(card) {
   return request.post(options) 
 }
 
-s3.getObject(params, async (err, data) => {
-  if (err) {
-    console.log(err, err.stack)
-  } else {
-    const spoiled = JSON.parse(data.Body.toString())
-    let cards = await request.get(scryfallUrl, { json: true })
-    if(cards.total_cards > spoiled.length){
-      let allCards = cards.data
+async function createSetFile() {
+  try {
+    await s3.putObject({ ...params, Body: JSON.stringify([]), ServerSideEncryption: "AES256"}).promise()
+  } catch(err) {
+    console.log(err)
+  }
+}
 
-      while(cards.next_page) {
-        cards = await request.get(cards.next_page, { json: true })
-        allCards = allCards.concat(cards.data)
-      }
-      
-      const newCards = allCards.filter((card) => !spoiled.includes(card.id))
+;(async () => {
 
-      if (newCards.length > process.env.LIMIT) {
-        await sendNotification(newCards.length)
-      } else {
-        await Promise.all(newCards.map(async (card) => {
-          await sendCard(card)
-          await delay(1000)
-        }))
-      }
-       
-      const updatedIdList = spoiled.concat(newCards.map(card => card.id))
-      s3.putObject({ ...params, Body: JSON.stringify(updatedIdList), ServerSideEncryption: "AES256"}, function(err, data) {
-        if (err) console.log(err, err.stack) 
-        else {
-          console.log('Updated spoilers')
-        }              
-      })
-    } else {
-      console.log('No new spoilers')
+  try {
+    await s3.headObject(params).promise()
+  } catch (err) {
+    if(err.code === 'NotFound') {
+      await createSetFile()
     }
   }
-})
 
+  s3.getObject(params, async (err, data) => {
+    if (err) {
+      console.log(err, err.stack)
+    } else {
+      const spoiled = JSON.parse(data.Body.toString())
+      let cards = await request.get(scryfallUrl, { json: true })
+      if(cards.total_cards > spoiled.length){
+        let allCards = cards.data
+
+        while(cards.next_page) {
+          cards = await request.get(cards.next_page, { json: true })
+          allCards = allCards.concat(cards.data)
+        }
+        
+        const newCards = allCards.filter((card) => !spoiled.includes(card.id))
+
+        if (newCards.length > process.env.LIMIT) {
+          await sendNotification(newCards.length)
+        } else {
+          await Promise.all(newCards.map(async (card) => {
+            await sendCard(card)
+            await delay(1000)
+          }))
+        }
+        
+        const updatedIdList = spoiled.concat(newCards.map(card => card.id))
+        s3.putObject({ ...params, Body: JSON.stringify(updatedIdList), ServerSideEncryption: "AES256"}, function(err, data) {
+          if (err) console.log(err, err.stack) 
+          else {
+            console.log('Updated spoilers')
+          }              
+        })
+      } else {
+        console.log('No new spoilers')
+      }
+    }
+  })
+
+})()
