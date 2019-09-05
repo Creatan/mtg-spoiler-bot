@@ -30,6 +30,7 @@ const mapColorEmoji = color => {
     case 'G/U': return 'gu'
     case 'G/W': return 'gw'
     case 'R/G': return 'rg'
+    case 'R/W': return 'rw'
     case 'U/B': return 'ub'
     case 'U/R': return 'ur'
     case 'W/B': return 'wb'
