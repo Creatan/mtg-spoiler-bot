@@ -41,7 +41,7 @@ const mapColorEmoji = color => {
 }
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const emojify = text => text.replace(/{([\dXWURBGSTC/]+)}/g, (match, p1) => `:mtg-${mapColorEmoji(p1)}:`.toLocaleLowerCase())
+const emojify = text => text && text.replace(/{([\dXWURBGSTC/]+)}/g, (match, p1) => `:mtg-${mapColorEmoji(p1)}:`.toLocaleLowerCase())
 
 async function sendNotification(count) {
   const options = {
