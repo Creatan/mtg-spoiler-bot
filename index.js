@@ -135,35 +135,31 @@ async function createSetFile() {
     } else {
       const spoiled = JSON.parse(data.Body.toString())
       let cards = await request.get(scryfallUrl, { json: true })
-      if(cards.total_cards > spoiled.length){
-        let allCards = cards.data
+      let allCards = cards.data
 
-        while(cards.next_page) {
-          cards = await request.get(cards.next_page, { json: true })
-          allCards = allCards.concat(cards.data)
-        }
-        
-        const newCards = allCards.filter((card) => !spoiled.includes(card.id))
-
-        if (newCards.length > process.env.LIMIT) {
-          await sendNotification(newCards.length)
-        } else {
-          await Promise.all(newCards.map(async (card) => {
-            await sendCard(card)
-            await delay(1000)
-          }))
-        }
-        
-        const updatedIdList = spoiled.concat(newCards.map(card => card.id))
-        s3.putObject({ ...params, Body: JSON.stringify(updatedIdList), ServerSideEncryption: "AES256"}, function(err, data) {
-          if (err) console.log(err, err.stack) 
-          else {
-            console.log('Updated spoilers')
-          }              
-        })
-      } else {
-        console.log('No new spoilers')
+      while(cards.next_page) {
+        cards = await request.get(cards.next_page, { json: true })
+        allCards = allCards.concat(cards.data)
       }
+      
+      const newCards = allCards.filter((card) => !spoiled.includes(card.id))
+
+      if (newCards.length > process.env.LIMIT) {
+        await sendNotification(newCards.length)
+      } else {
+        await Promise.all(newCards.map(async (card) => {
+          await sendCard(card)
+          await delay(1000)
+        }))
+      }
+      
+      const updatedIdList = spoiled.concat(newCards.map(card => card.id))
+      s3.putObject({ ...params, Body: JSON.stringify(updatedIdList), ServerSideEncryption: "AES256"}, function(err, data) {
+        if (err) console.log(err, err.stack) 
+        else {
+          console.log('Updated spoilers')
+        }              
+      })
     }
   })
 
